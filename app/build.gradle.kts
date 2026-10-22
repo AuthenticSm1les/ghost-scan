@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -6,6 +8,12 @@ plugins {
     id("kotlin-parcelize")
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
+}
+
+// The release signing key lives outside the repo; without it the release APK is left unsigned.
+val releaseSigningFile = file("${System.getProperty("user.home")}/.android/ghost-scan-release.properties")
+val releaseSigning = releaseSigningFile.takeIf { it.exists() }?.let { file ->
+    Properties().apply { file.inputStream().use { load(it) } }
 }
 
 java {
@@ -19,11 +27,11 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "me.dcnick3.baam"
+        applicationId = "me.authenticsm1les.ghostscan"
         minSdk = 21
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.4"
+        versionCode = 6
+        versionName = "1.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -31,8 +39,21 @@ android {
         }
     }
 
+    signingConfigs {
+        if (releaseSigning != null) {
+            create("release") {
+                storeFile = file(releaseSigning.getProperty("storeFile"))
+                storePassword = releaseSigning.getProperty("storePassword")
+                keyAlias = releaseSigning.getProperty("keyAlias")
+                keyPassword = releaseSigning.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         getByName("release") {
+            signingConfig = signingConfigs.findByName("release")
+
             // Enables code shrinking, obfuscation, and optimization for only
             // your project's release build type. Make sure to use a build
             // variant with `isDebuggable=false`.
@@ -51,7 +72,7 @@ android {
             )
         }
         productFlavors {
-            setProperty("archivesBaseName", "baam-${defaultConfig.versionName}")
+            setProperty("archivesBaseName", "ghost-scan-${defaultConfig.versionName}")
         }
     }
     compileOptions {

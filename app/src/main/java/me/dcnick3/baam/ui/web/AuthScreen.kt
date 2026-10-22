@@ -48,11 +48,13 @@ private class AuthWevViewClient(val vm: ApiViewModel) : AccompanistWebViewClient
             cookieManager.flush()
         }
 
-        if (url?.startsWith(baamBaseUrl) == true) {
-            val cookie = cookieManager.getCookie(baamBaseUrl)
-            Log.i(TAG, "Got baam cookies!")
-            _cookie.value = cookie
-            vm.setAuthCookie(cookie)
+        if (url?.startsWith(baamBaseUrl) == true && _cookie.value == null) {
+            val cookie: String? = cookieManager.getCookie(baamBaseUrl)
+            if (cookie != null) {
+                Log.i(TAG, "Got baam cookies!")
+                _cookie.value = cookie
+                vm.addAccount(cookie)
+            }
         }
 
         Log.i(TAG, "onPageFinished: $url")

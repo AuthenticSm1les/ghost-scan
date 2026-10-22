@@ -3,6 +3,7 @@
 package me.dcnick3.baam.ui.camera
 
 import android.graphics.Matrix
+import android.net.Uri
 import android.util.Log
 import android.util.Size
 import android.view.ViewGroup
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -151,7 +153,10 @@ fun ScannerScreen(navController: NavController, vm: ApiViewModel = hiltViewModel
                                             "scan"
                                         ) == true
                                     )
-                                        navController.navigate("success/${result.code}")
+                                        navController.navigate(
+                                            "success/${result.code}?summary=" +
+                                                    Uri.encode(result.summary.joinToString("\n"))
+                                        )
                                 }
 
                                 ChallengeResult.Unacceptable -> {
@@ -186,6 +191,10 @@ fun ScannerScreen(navController: NavController, vm: ApiViewModel = hiltViewModel
             overlay,
             pointSize,
         )
+    }
+
+    LaunchedEffect(Unit) {
+        vm.notices.collect { errorState.setError(it) }
     }
 
     val resolution by imageAnalyzer.analysisResolution.collectAsState()

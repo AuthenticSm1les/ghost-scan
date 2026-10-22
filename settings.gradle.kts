@@ -15,5 +15,5 @@ dependencyResolutionManagement {
 //        mavenLocal()
     }
 }
-rootProject.name = "baam"
+rootProject.name = "ghost-scan"
 include(":app")

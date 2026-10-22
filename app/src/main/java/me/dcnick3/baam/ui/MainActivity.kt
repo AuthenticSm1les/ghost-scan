@@ -36,14 +36,22 @@ class MainActivity : ComponentActivity() {
                     NavHost(navController = navController, startDestination = "scan") {
                         composable("scan") { ScanScreen(navController) }
                         composable(
-                            "success/{code}",
-                            arguments = listOf(navArgument("code") { type = NavType.StringType })
+                            "success/{code}?summary={summary}",
+                            arguments = listOf(
+                                navArgument("code") { type = NavType.StringType },
+                                navArgument("summary") {
+                                    type = NavType.StringType
+                                    defaultValue = ""
+                                },
+                            )
                         ) { backStackEntry ->
                             val code = backStackEntry.arguments?.getString("code")
+                            val summary = backStackEntry.arguments?.getString("summary")
+                                ?.lines()?.filter { it.isNotBlank() }.orEmpty()
                             if (code == null) {
                                 navController.popBackStack()
                             } else {
-                                SuccessfulMark(code)
+                                SuccessfulMark(code, summary)
                             }
                         }
                         composable("update") {

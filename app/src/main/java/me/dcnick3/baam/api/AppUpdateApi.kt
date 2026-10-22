@@ -120,7 +120,7 @@ data class GithubRelease(
     val body: String
 )
 
-const val githubLocation = "DCNick3/baam-android"
+const val githubLocation = "AuthenticSm1les/ghost-scan"
 private const val CONTENT_TYPE_APK = "application/vnd.android.package-archive"
 
 

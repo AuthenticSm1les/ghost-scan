@@ -6,24 +6,21 @@ import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.cookies.CookiesStorage
-import io.ktor.client.plugins.cookies.HttpCookies
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
-import io.ktor.http.Cookie
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.Url
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
-import io.ktor.http.parseClientCookiesHeader
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
@@ -54,45 +51,12 @@ sealed class BaamError {
     data class NetworkError(val error: IOException) : BaamError()
 }
 
-fun parseCookies(cookie: String): List<Cookie> {
-    val asMap = parseClientCookiesHeader(cookie)
-
-    return asMap.map {
-        // we don't care about the expiration date, because we will set it on every app launch
-        Cookie(it.key, it.value, domain = baamDomain, path = "/", secure = true)
-    }.toList()
-}
-
-class BaamCookieStorage : CookiesStorage {
-    private var baamCookies: List<Cookie> = emptyList()
-
-    fun setCookies(cookies: List<Cookie>) {
-        baamCookies = cookies
-    }
-
-    override suspend fun addCookie(requestUrl: Url, cookie: Cookie) {
-        // Ignore new cookies
-    }
-
-    override fun close() {}
-
-    override suspend fun get(requestUrl: Url): List<Cookie> {
-        if (requestUrl.host != baamDomain) {
-            return emptyList()
-        }
-        return baamCookies
-    }
-
-}
-
 typealias ApiResult<R> = Result<R, BaamError>
 
 const val baamDomain = "baam.tatar"
 val baamBaseUrl = "https://$baamDomain/"
 
 class BaamApi internal constructor() {
-    val cookies = BaamCookieStorage()
-
     private val client = HttpClient {
         defaultRequest {
             url(baamBaseUrl)
@@ -102,9 +66,6 @@ class BaamApi internal constructor() {
         }
         install(ContentNegotiation) {
             json(Json { isLenient = false; ignoreUnknownKeys = false })
-        }
-        install(HttpCookies) {
-            storage = cookies
         }
         followRedirects = false
     }
@@ -129,16 +90,19 @@ class BaamApi internal constructor() {
     }
 
     // This API call is only used to check the auth cookie, so it's fine to ignore the response
-    suspend fun getSessions(): ApiResult<Unit> {
+    suspend fun getSessions(cookie: String): ApiResult<Unit> {
         return handleCall { client ->
-            client.get("api/AttendanceSession/")
+            client.get("api/AttendanceSession/") {
+                header(HttpHeaders.Cookie, cookie)
+            }
         }
     }
 
-    suspend fun submitChallenge(code: String, challenge: String): ApiResult<Unit> {
+    suspend fun submitChallenge(cookie: String, code: String, challenge: String): ApiResult<Unit> {
         val result: ApiResult<Unit>? = withTimeoutOrNull(1000) {
             handleCall { client ->
                 client.post("api/AttendanceSession/$code/submitChallenge") {
+                    header(HttpHeaders.Cookie, cookie)
                     contentType(ContentType.Application.Json)
                     setBody(JsonPrimitive(challenge))
                 }

@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">baam</string>
+    <string name="app_name">Ghost Scan</string>
     <string name="text_file_sizes">B|KiB|MiB|GiB|TiB</string>
 </resources>
